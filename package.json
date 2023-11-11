@@ -1,0 +1,25 @@
+{
+  "name": "mediaplayer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "buildts": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "start": "vite build && tauri dev",
+    "build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.5.0",
+    "tauri-plugin-fs-extra-api": "https://github.com/tauri-apps/tauri-plugin-fs-extra#v1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.0",
+    "@types/node": "^20.8.4",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.4"
+  },
+  "license": "MIT"
+}

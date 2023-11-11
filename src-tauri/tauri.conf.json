@@ -1,0 +1,88 @@
+{
+  "build": {
+    "beforeDevCommand": "yarn dev",
+    "beforeBuildCommand": "yarn buildts",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": true
+  },
+  "package": {
+    "productName": "ALT Media Player",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "execute": true,
+        "scope": [
+          {
+            "name": "run-explorer",
+            "cmd": "explorer",
+            "args": ["/e,/select,", { "validator": "\\S+" }]
+          }
+        ]
+      },
+      "window":{
+        "all":true
+      },
+      "path": {
+        "all": true
+      },
+      "fs": {
+        "all":true,
+        "scope": ["**"]
+      },
+      "clipboard": {
+        "all": true
+      },
+      "protocol": {
+        "all":false,
+        "asset": true,
+        "assetScope": ["**"]
+      },
+      "dialog":{
+        "all":true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "nsis",
+      "identifier": "com.altmediaplayer",
+      "icon": [
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "category":"Video",
+      "windows": {
+        "nsis":{
+          "installMode":"currentUser",
+          "installerIcon": "icons/icon.ico"
+        }
+      }
+    },
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost"
+    },
+    "systemTray":{
+      "iconPath": "icons/icon.ico"
+    },
+    "windows": [
+        {
+          "label":"Player",
+          "fullscreen": false,
+          "resizable": true,
+          "maximizable":true,
+          "minimizable":true,
+          "closable":true,
+          "focus":true,
+          "visible":false,
+          "decorations":false,
+          "skipTaskbar":false,
+          "transparent":false,
+          "theme":"Dark",
+          "url":"src/player/player.html"
+        }
+    ]
+  }
+}

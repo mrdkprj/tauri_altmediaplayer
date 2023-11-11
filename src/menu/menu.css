@@ -1,0 +1,96 @@
+.menu-container{
+    position: fixed;
+    width: fit-content;
+    background-color: var(--menu-bgcolor);
+    display: flex;
+    flex-direction: column;
+    outline: 1px solid var(--menu-border-color);
+    font-size: 13px;
+    z-index: 9999;
+    outline-offset: -1px;
+}
+
+.menu-item{
+    height: 25px;
+    padding: 2px 25px 2px 25px;
+    margin: 5px;
+    color: var(--menu-color);
+    cursor: default;
+    border-radius: 4px;
+    line-height: 25px;
+    white-space: nowrap;
+    display: block;
+}
+
+.menu-item:hover{
+    background-color: var(--menu-hover-color);
+}
+
+.menu-separator{
+    width: 100%;
+    border-top: 1px solid var(--menu-border-color);
+}
+
+.submenu{
+    position: relative;
+    top:-100%;
+    left: calc(100% + 30px);
+    outline: 1px solid var(--menu-border-color);
+    border-radius: 4px;
+    visibility: hidden;
+    display: flex;
+    background-color: var(--menu-bgcolor);
+    flex-direction: column;
+    transition-delay: 0.5s;
+    transition-property: visibility;
+}
+
+.revert .submenu{
+    right: calc(100% + 30px);
+    left: unset;
+}
+
+.submenu-container{
+    position: relative;
+}
+.submenu-container::before{
+    content: "";
+    position: absolute;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    top: calc(50% - 4px);
+    border-top: 1px solid var(--menu-color);
+    border-right: 1px solid var(--menu-color);
+    transform: rotate(45deg);
+}
+
+.checkbox-menu{
+    position: relative;
+}
+
+.checkbox-menu[checked]::before{
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    top: 8px;
+    border-right: 2px solid var(--menu-color);
+    transform: rotate(30deg);
+}
+
+.checkbox-menu[checked]::after{
+    content: "";
+    position: absolute;
+    left: 1px;
+    width: 5px;
+    height: 6px;
+    top: 17px;
+    border-left: 2px solid var(--menu-color);
+    transform: rotate(135deg);
+}
+
+.submenu-container:hover .submenu{
+    visibility: visible;
+}
