@@ -1,9 +1,11 @@
 import * as fs from "@tauri-apps/api/fs"
 import * as path from "../path";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
-import { metadata } from "tauri-plugin-fs-extra-api";
+import {IPCBase} from "../ipc";
 // import ffmpeg from "fluent-ffmpeg"
 //import { Resolutions, Rotations } from "../constants";
+
+const ipc = new IPCBase();
 
 export const EmptyFile:Mp.MediaFile = {
     id:"",
@@ -62,7 +64,7 @@ export default class Util{
 
     async toFile(fullPath:string):Promise<Mp.MediaFile>{
 
-        const statInfo = await metadata(fullPath);
+        const statInfo = await ipc.invoke("stat", {fullPath});
 
         return {
             id: crypto.randomUUID(),
@@ -70,7 +72,7 @@ export default class Util{
             dir: path.dirname(fullPath),
             src: convertFileSrc(fullPath),
             name:decodeURIComponent(encodeURIComponent(path.basename(fullPath))),
-            date:statInfo.modifiedAt.getTime(),
+            date:statInfo.mtime,
             extension: path.extname(fullPath),
         }
     }

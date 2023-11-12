@@ -467,6 +467,7 @@ const copyFileNameToClipboard = async (fullPath:boolean) => {
 }
 
 const toggleGroupBy = () => {
+    console.log("here")
     config.data.sort.groupBy = !config.data.sort.groupBy
     sortPlayList();
 }

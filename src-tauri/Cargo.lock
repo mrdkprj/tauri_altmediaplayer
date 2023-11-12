@@ -42,6 +42,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alt_mediaplayer"
+version = "0.0.0"
+dependencies = [
+ "once_cell",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-fs-extra",
+ "windows 0.39.0",
+]
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1544,19 +1557,6 @@ name = "matches"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2532096657941c2fea9c289d370a250971c689d4f143798ff67113ec042024a5"
-
-[[package]]
-name = "mediaplayer"
-version = "0.0.0"
-dependencies = [
- "lazy_static",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-fs-extra",
- "windows 0.39.0",
-]
 
 [[package]]
 name = "memchr"

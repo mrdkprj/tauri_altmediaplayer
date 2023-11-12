@@ -292,8 +292,7 @@ export default class Helper{
         const name = "Sort"
         return [
             {
-                name,
-                value:"GroupBy",
+                name:"GroupBy",
                 label: "Group By Directory",
                 type: "checkbox",
                 checked: config.sort.groupBy,

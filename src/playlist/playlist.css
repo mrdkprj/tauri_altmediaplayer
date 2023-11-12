@@ -97,11 +97,11 @@
     font-size: 14px;
 }
 
-.separator{
+.group{
     display: none;
 }
 
-.group-by .separator{
+.group-by .group{
     word-break: break-all;
     padding: 5px 0;
     cursor: default;
@@ -117,18 +117,18 @@
     align-items: center;
 }
 
-.separator .left{
+.group .left{
     height: 1px;
     width: 15px;
     background-color: var(--playlist-item-color);
 }
 
-.separator .mid{
+.group .mid{
     flex: 1 1 auto;
     margin: 0 5px;
 }
 
-.separator .right{
+.group .right{
     height: 1px;
     width: 100%;
     background-color: var(--playlist-item-color);

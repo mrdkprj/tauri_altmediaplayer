@@ -1,13 +1,14 @@
 use tauri::Window;
-use std::mem;
-
-use windows::{
-  Win32::UI::Shell::*,
-  Win32::UI::Controls::*,
-  Win32::Foundation::*,
-  Win32::UI::WindowsAndMessaging::*,
-  Win32::Graphics::Gdi::*,
+use windows::Win32::{
+  Foundation::{WPARAM, LPARAM, LRESULT, POINT, RECT, HWND},
+  Graphics::Gdi::{ScreenToClient, PtInRect},
+  UI::Controls::WM_MOUSELEAVE,
+  UI::Shell::{SetWindowSubclass, RemoveWindowSubclass, DefSubclassProc},
+  UI::WindowsAndMessaging::{SetWindowsHookExA, WH_MOUSE_LL, UnhookWindowsHookEx, CallNextHookEx, GetClientRect, WM_MOUSEMOVE, MSLLHOOKSTRUCT, HHOOK},
 };
+use std::mem;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
 
 #[derive(Clone, serde::Serialize)]
 struct Position {
@@ -15,28 +16,27 @@ struct Position {
   y:i32,
 }
 
-static mut FOWARDING_MOUSE_MESSAGES:bool = false;
-static mut FORWARDING_WINDOWS:Vec<Window> = Vec::new();
-static mut MOUSE_HOOK:Option<HHOOK> = None;
+static FOWARDING_MOUSE_MESSAGES:Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
+static FORWARDING_WINDOWS: Lazy<Mutex<Vec<Window>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static MOUSE_HOOK:Lazy<Mutex<Option<HHOOK>>> = Lazy::new(|| Mutex::new(None) );
 
 pub fn clear_forward(){
-  unsafe{
-    FORWARDING_WINDOWS.iter().for_each(|window| forward_mouse_messages(window, false));
-  }
+  FORWARDING_WINDOWS.lock().unwrap().iter().for_each(|window| forward_mouse_messages(window, false));
 }
 
 pub fn forward_mouse_messages(window:&Window, forward:bool){
 
   let hwnd = window.hwnd().unwrap();
+  let mut fowarding_mouse_messages = FOWARDING_MOUSE_MESSAGES.lock().unwrap();
+  let mut forwarding_windows = FORWARDING_WINDOWS.lock().unwrap();
+  let mut mouse_hook = MOUSE_HOOK.lock().unwrap();
 
-  unsafe{
+  if forward == true {
 
-    if forward == true {
-      //println!("{:?}", "--------- forward -------");
-      //println!("{:?}", window.label());
-      FOWARDING_MOUSE_MESSAGES = true;
-      FORWARDING_WINDOWS.push(window.clone());
+    *fowarding_mouse_messages = true;
+    forwarding_windows.push(window.clone());
 
+    unsafe{
       // Subclassing is used to fix some issues when forwarding mouse messages;
       // see comments in |SubclassProc|.
       SetWindowSubclass(
@@ -46,35 +46,39 @@ pub fn forward_mouse_messages(window:&Window, forward:bool){
         Box::into_raw(Box::new(window)) as usize
       );
 
-      if MOUSE_HOOK == None {
+      if *mouse_hook == None {
         let rusult = SetWindowsHookExA(
           WH_MOUSE_LL,
           Some(mouse_hook_proc),
           None,
           0
         );
-        MOUSE_HOOK = rusult.ok();
+        *mouse_hook = rusult.ok();
       }
+    }
 
-    } else if forward == false{
+  } else if forward == false{
 
-      //println!("{:?}", "------- not ---------");
-      //FORWARDING_WINDOWS.iter().for_each(|w| println!("{:?}", w.label()));
 
-      if let Some(index) = FORWARDING_WINDOWS.iter().position(|x| x.label() == window.label()) {
-        FORWARDING_WINDOWS.remove(index);
+    if let Some(index) = forwarding_windows.iter().position(|x| x.label() == window.label()) {
+      forwarding_windows.remove(index);
+      unsafe{
         RemoveWindowSubclass(hwnd, Some(sub_class_proc), 1);
       }
+    }
 
-      if FOWARDING_MOUSE_MESSAGES == true && FORWARDING_WINDOWS.is_empty() == true {
-        FOWARDING_MOUSE_MESSAGES = false;
-        UnhookWindowsHookEx(MOUSE_HOOK.unwrap());
-        MOUSE_HOOK = None;
+    if *fowarding_mouse_messages == true && forwarding_windows.is_empty() == true {
+      *fowarding_mouse_messages = false;
+      unsafe{
+        if *mouse_hook != None {
+          UnhookWindowsHookEx(mouse_hook.unwrap());
+        }
       }
-
+      *mouse_hook = None;
     }
 
   }
+
 
 }
 
@@ -91,10 +95,8 @@ unsafe extern "system" fn sub_class_proc(hwnd: HWND, umsg: u32, wparam: WPARAM, 
     // the messages. As to why this is caught for the legacy window and not
     // the actual browser window is simply that the legacy window somehow
     // makes use of these events; posting to the main window didn't work.
-    unsafe{
-      if FOWARDING_MOUSE_MESSAGES == true {
+    if *FOWARDING_MOUSE_MESSAGES.lock().unwrap() == true {
         return windows::Win32::Foundation::LRESULT(0);
-      }
     }
 
   }
@@ -115,7 +117,9 @@ unsafe extern "system" fn mouse_hook_proc(n_code:i32,wparam: WPARAM, lparam: LPA
 
   if wparam.0 == WM_MOUSEMOVE as usize {
 
-    for window in &FORWARDING_WINDOWS {
+    let forwarding_windows = FORWARDING_WINDOWS.lock().unwrap();
+
+    for window in &*forwarding_windows {
       let hwnd = window.hwnd().unwrap();
 
       // At first I considered enumerating windows to check whether the cursor
@@ -124,8 +128,7 @@ unsafe extern "system" fn mouse_hook_proc(n_code:i32,wparam: WPARAM, lparam: LPA
       // just left it as is.
       let mut client_rect = RECT::default();
       GetClientRect(hwnd, &mut client_rect);
-      //POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
-      //let mut p: POINT = unsafe { mem::transmute::<_, POINT>(lparam) };
+
       let hook_struct = unsafe { mem::transmute::<LPARAM, &MSLLHOOKSTRUCT>(lparam) };
       let mut p:POINT = hook_struct.pt;
       //println!("{:?}", p);
@@ -135,7 +138,7 @@ unsafe extern "system" fn mouse_hook_proc(n_code:i32,wparam: WPARAM, lparam: LPA
         //let w:WPARAM = WPARAM(0);  // No virtual keys pressed for our purposes
         //let l:LPARAM = make_lparam(p.x as i16, p.y as i16);
         //PostMessageW(hwnd, WM_MOUSEMOVE, w, l);
-        window.emit("nmouse", Position{x:p.x, y:p.y}).unwrap();
+        window.emit("MOUSEMOVE", Position{x:p.x, y:p.y}).unwrap();
       }
   }
 

@@ -17,9 +17,15 @@ declare global {
         data:MainChannelEventMap[T];
     }
 
+    type TauriCommand<Req,Res> = {
+        Request:Req,
+        Response:Res,
+    }
+
     type TauriCommandMap = {
-        "rename":Mp.TauriRenamePayload;
-        "clickthru":Mp.TauriClickthruPayload;
+        "rename":TauriCommand<Mp.TauriRenamePayload, null>;
+        "clickthru":TauriCommand<Mp.TauriClickthruPayload, null>;
+        "stat": TauriCommand<Mp.TauriStatPayload, Mp.TauriStatResponse>;
     }
 
     type MainChannelEventMap = {
@@ -104,7 +110,7 @@ declare global {
         type FileDialogType = "Read" | "Write";
 
         type MenuName = PlayerContextMenuType | PlaylistContextMenuType | ContextMenuSeparator;
-        type SubMenuName = PlaybackSpeed | SeekSpeed | SortOrder | Theme | FileDialogType | "GroupBy"
+        type SubMenuName = PlaybackSpeed | SeekSpeed | SortOrder | Theme | FileDialogType
 
         type VideoFrameSize = "SizeNone" | "360p" | "480p" | "720p" | "1080p";
         type VideoRotation = "RotationNone" | "90Clockwise" | "90CounterClockwise"
@@ -388,6 +394,17 @@ declare global {
         type TauriClickthruPayload = {
             ignore:boolean;
             id:string;
+        }
+
+        type TauriStatPayload = {
+            fullPath:string;
+        }
+
+        type TauriStatResponse = {
+            size:number,
+            atime:number,
+            mtime:number,
+            ctime:number,
         }
 
         type RenameRequest = {

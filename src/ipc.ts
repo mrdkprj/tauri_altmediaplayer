@@ -1,11 +1,20 @@
 import {listen, emit, Event, EventName} from "@tauri-apps/api/event"
 import { invoke } from "@tauri-apps/api/tauri";
 
-export class IPC {
+export class IPCBase{
+
+    invoke = async <K extends keyof TauriCommandMap>(channel:K, data:TauriCommandMap[K]["Request"]): Promise<TauriCommandMap[K]["Response"]> => {
+        return await invoke<TauriCommandMap[K]["Response"]>(channel, data);
+    }
+
+}
+
+export class IPC extends IPCBase {
 
     label:RendererName;
 
     constructor(label:RendererName){
+        super();
         this.label = label;
     }
 
@@ -57,13 +66,9 @@ export class IPC {
         await this.sender(channel, data)
     }
 
-    invoke = async <K extends keyof TauriCommandMap>(channel:K, data:TauriCommandMap[K]) => {
-        await invoke<TauriCommandMap[K]>(channel, data);
-    }
-
 }
 
-export class IPCMain {
+export class IPCMain extends IPCBase {
 
     private listener = <K extends keyof MainChannelEventMap>(e:Event<RendererEvent<K>>, handler: (e: MainChannelEventMap[K]) => void) => {
 
@@ -80,7 +85,4 @@ export class IPCMain {
         await emit(channel, {data, target:rendererName});
     }
 
-    invoke = async <K extends keyof TauriCommandMap>(channel:K, data:TauriCommandMap[K]) => {
-        await invoke<TauriCommandMap[K]>(channel, data);
-    }
 }

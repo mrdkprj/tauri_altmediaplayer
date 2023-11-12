@@ -2,7 +2,7 @@ import * as fs from "@tauri-apps/api/fs"
 import Util from "./util";
 import * as path from '@tauri-apps/api/path';
 
-const CONFIG_FILE_NAME = "mediaplayer.config.json"
+const CONFIG_FILE_NAME = "altmediaplayer.config.json"
 
 const defaultConfig :Mp.Config = {
     bounds: {
@@ -34,8 +34,8 @@ const defaultConfig :Mp.Config = {
         fitToWindow: true,
     },
     audio:{
-        volume: 1,
-        ampLevel: 0.07,
+        volume: 0.5,
+        ampLevel: 0.1,
         mute:false,
     },
     path:{
