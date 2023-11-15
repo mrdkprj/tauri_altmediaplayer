@@ -8,6 +8,7 @@ use clickthru::{clear_forward, forward_mouse_messages};
 
 #[tauri::command]
 fn clickthru(app: tauri::AppHandle, ignore:bool, id:String){
+    //println!("win:{}, ignore:{}",id, ignore);
     let window: tauri::Window = app.get_window(&id).unwrap();
     forward_mouse_messages(&window, ignore);
     window.set_ignore_cursor_events(ignore).unwrap();
@@ -94,7 +95,6 @@ fn create_child_window(app:&App, id: &str, url: &str, parent: &Window) -> Window
 
 fn main(){
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs_extra::init())
         .setup(|app| {
 
             let player = app.get_window("Player").unwrap();

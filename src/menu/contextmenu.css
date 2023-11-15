@@ -1,52 +1,56 @@
 .menu-container{
     position: fixed;
     width: fit-content;
-    background-color: var(--menu-bgcolor);
+    background-color: var(--context-bgcolor);
     display: flex;
     flex-direction: column;
-    outline: 1px solid var(--menu-border-color);
-    font-size: 13px;
+    outline: 1px solid var(--context-border-color);
+    font-size: 12px;
     z-index: 9999;
     outline-offset: -1px;
+    border-radius: 4px;
 }
 
 .menu-item{
     height: 25px;
-    padding: 2px 25px 2px 25px;
-    margin: 5px;
-    color: var(--menu-color);
+    padding: 1px 25px 1px 25px;
+    margin: 5px 5px;
+    color: var(--context-color);
     cursor: default;
     border-radius: 4px;
     line-height: 25px;
     white-space: nowrap;
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .menu-item:hover{
-    background-color: var(--menu-hover-color);
+    background-color: var(--context-hover-color);
 }
 
 .menu-separator{
     width: 100%;
-    border-top: 1px solid var(--menu-border-color);
+    border-top: 1px solid var(--context-border-color);
 }
 
 .submenu{
-    position: relative;
-    top:-100%;
-    left: calc(100% + 30px);
-    outline: 1px solid var(--menu-border-color);
+    position: absolute;
+    top:-4px;
+    /*left: calc(100% + 30px);*/
+    left:100% ;
+    outline: 1px solid var(--context-border-color);
     border-radius: 4px;
     visibility: hidden;
     display: flex;
-    background-color: var(--menu-bgcolor);
+    background-color: var(--context-bgcolor);
     flex-direction: column;
     transition-delay: 0.5s;
     transition-property: visibility;
 }
 
 .revert .submenu{
-    right: calc(100% + 30px);
+    right: 100%;
     left: unset;
 }
 
@@ -75,8 +79,8 @@
     left: 0;
     width: 10px;
     height: 10px;
-    top: 8px;
-    border-right: 2px solid var(--menu-color);
+    top: 6px;
+    border-right: 2px solid var(--context-color);
     transform: rotate(30deg);
 }
 
@@ -87,7 +91,7 @@
     width: 5px;
     height: 6px;
     top: 17px;
-    border-left: 2px solid var(--menu-color);
+    border-left: 2px solid var(--context-color);
     transform: rotate(135deg);
 }
 

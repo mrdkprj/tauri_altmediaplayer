@@ -138,7 +138,7 @@ unsafe extern "system" fn mouse_hook_proc(n_code:i32,wparam: WPARAM, lparam: LPA
         //let w:WPARAM = WPARAM(0);  // No virtual keys pressed for our purposes
         //let l:LPARAM = make_lparam(p.x as i16, p.y as i16);
         //PostMessageW(hwnd, WM_MOUSEMOVE, w, l);
-        window.emit("MOUSEMOVE", Position{x:p.x, y:p.y}).unwrap();
+        window.emit("WM_MOUSEMOVE", Position{x:p.x, y:p.y}).unwrap();
       }
   }
 

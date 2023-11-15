@@ -66,7 +66,7 @@ export default class Helper{
             {
                 name:"TogglePlaylistWindow",
                 label: "Playlist",
-                accelerator: "CmdOrCtrl+P",
+                accelerator: "Ctrl+P",
             },
             {
                 name:"ToggleFullscreen",
@@ -81,7 +81,7 @@ export default class Helper{
             {
                 name:"Capture",
                 label: "Capture",
-                accelerator: "CmdOrCtrl+S",
+                accelerator: "Ctrl+S",
             },
             { name:"separator", type: 'separator' },
             {
@@ -243,17 +243,17 @@ export default class Helper{
             {
                 name:"CopyFileName",
                 label: "Copy Name",
-                accelerator: "CmdOrCtrl+C",
+                accelerator: "Ctrl+C",
             },
             {
                 name:"CopyFullpath",
                 label: "Copy Full Path",
-                accelerator: "CmdOrCtrl+Shift+C",
+                accelerator: "Ctrl+Shift+C",
             },
             {
                 name:"Reveal",
                 label: "Reveal in File Explorer",
-                accelerator: "CmdOrCtrl+R",
+                accelerator: "Ctrl+R",
             },
             { name:"separator", type:"separator" },
             {

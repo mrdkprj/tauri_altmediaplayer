@@ -56,6 +56,12 @@ const onContextMenu = async (e:MouseEvent) => {
 
 const onKeydown = async (e:KeyboardEvent) => {
 
+    if(e.ctrlKey && e.altKey && e.key == "i"){
+        // open dev tool
+    }else{
+        e.preventDefault();
+    }
+
     if(RenameState.renaming) return;
 
     if(e.key === "Enter"){

@@ -1,19 +1,46 @@
 import {Event} from "@tauri-apps/api/event"
 import { LogicalPosition, LogicalSize, appWindow } from '@tauri-apps/api/window'
-import { ContextMenuBuilder } from "./builder";
+import { ContextMenu } from "./contextmenu";
 import { IPC } from "../ipc";
 
 const ipc = new IPC(appWindow.label as RendererName)
 const windowId = appWindow.label as RendererName;
-const menus:{[key in ContextMenuName]:ContextMenuBuilder} = {
-    "PlayerMenu": new ContextMenuBuilder("PlayerMenu"),
-    "PlaylistMenu": new ContextMenuBuilder("PlaylistMenu"),
-    "SortMenu": new ContextMenuBuilder("SortMenu"),
+const menus:{[key in ContextMenuName]:ContextMenu} = {
+    "PlayerMenu": new ContextMenu("PlayerMenu"),
+    "PlaylistMenu": new ContextMenu("PlaylistMenu"),
+    "SortMenu": new ContextMenu("SortMenu"),
 };
-let currentBuilder:ContextMenuBuilder | null = null;
+const bound = {
+    right:screen.availWidth,
+    bottom:screen.availHeight
+}
+
+let currentMenu:ContextMenu | null = null;
 let ignore = false;
 
 window.addEventListener("contextmenu", e => e.preventDefault());
+
+const getPosition = (menu:ContextMenu, mousePosition:Mp.Position) => {
+
+    const size = menu.size;
+    const position = {
+        revert:false,
+        x:mousePosition.x,
+        y:mousePosition.y,
+    }
+
+    const right = mousePosition.x + size.outerWidth
+    const bottom = mousePosition.y + size.outerHeight
+
+    if(bottom >= bound.bottom) position.y = position.y - size.innerHeight;
+
+    if(right >= bound.right){
+        position.x = position.x - size.outerWidth;
+        position.revert = true;
+    }
+
+    return position;
+}
 
 const show = async (e: Mp.ContextMenuEvent) => {
 
@@ -21,16 +48,19 @@ const show = async (e: Mp.ContextMenuEvent) => {
 
     await ipc.invoke("clickthru", {ignore, id:windowId})
 
-    if(currentBuilder){
-        document.body.removeChild(currentBuilder.menu)
+    if(currentMenu){
+        document.body.removeChild(currentMenu.menu)
     }
-    currentBuilder = menus[e.target];
-    document.body.append(currentBuilder.menu)
+    currentMenu = menus[e.target];
+    document.body.append(currentMenu.menu)
 
-    console.log(e.x + currentBuilder.size.innerWidth)
-    console.log(e.y + currentBuilder.size.innerHeight)
-    await appWindow.setSize(new LogicalSize(currentBuilder.size.outerWidth, currentBuilder.size.outerHeight))
-    await appWindow.setPosition(new LogicalPosition(e.x, e.y ))
+    const position = getPosition(currentMenu, e);
+
+    currentMenu.show(position.revert);
+
+    await appWindow.setSize(new LogicalSize(currentMenu.size.outerWidth, currentMenu.size.outerHeight))
+
+    await appWindow.setPosition(new LogicalPosition(position.x, position.y ))
     await appWindow.show()
 }
 
@@ -41,17 +71,17 @@ const onMenuItemClick = async (e:Mp.MenuItemClickEvent) => {
 
 const build = async (e: Mp.ContextMenuBuildRequest) => {
     e.options.forEach(option => {
-        const builder = menus[option.name]
-        builder.build(option.menus)
-        builder.onClick(onMenuItemClick);
+        const menu = menus[option.name]
+        menu.build(option.menus)
+        menu.onClick(onMenuItemClick);
     })
 
 }
 
 const hide = async () => {
-    if(currentBuilder){
-        document.body.removeChild(currentBuilder.menu)
-        currentBuilder = null;
+    if(currentMenu){
+        document.body.removeChild(currentMenu.menu)
+        currentMenu = null;
     }
 
     await appWindow.hide()
@@ -81,7 +111,7 @@ const onMouseMove = async (e:MouseEvent) => {
 }
 
 appWindow.listen("tauri://blur", hide)
-appWindow.listen<Mp.Position>("nmouse", onFowardedMouseMove)
+appWindow.listen<Mp.Position>("WM_MOUSEMOVE", onFowardedMouseMove)
 ipc.receive("build-menu", build)
 ipc.receive("popup-context-menu", show);
 

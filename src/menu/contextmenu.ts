@@ -9,12 +9,12 @@ const menuItemHeight = 29;
 const separatorHeight = 1;
 const extra = 10;
 
-export class ContextMenuBuilder{
+export class ContextMenu{
 
     private name:ContextMenuName;
     private options:Mp.ContextMenu[];
     menu:HTMLElement;
-    size = {
+    size:Mp.ContextMenuSize = {
         innerHeight:0,
         outerHeight:0,
         innerWidth:0,
@@ -36,6 +36,16 @@ export class ContextMenuBuilder{
         this.handler = handler;
     }
 
+    show(revert:boolean){
+        if(revert){
+            this.menu.classList.add("revert");
+            this.menu.style.transform = `translateX(${this.size.outerWidth - this.size.innerWidth}px)`
+        }else{
+            this.menu.classList.remove("revert");
+            this.menu.style.transform = `translateX(0)`
+        }
+    }
+
     build(options:Mp.ContextMenu[]){
 
         this.options = options;
@@ -44,8 +54,8 @@ export class ContextMenuBuilder{
         this.menu.classList.add("menu-container")
         this.menu.setAttribute("menu", "")
         this.menu.tabIndex = 0;
+        this.menu.style.position = "fixed"
         this.menu.style.top = "0px";
-        this.menu.style.left = "0px";
 
         this.options.forEach(menuItem => {
             this.menu.append(this.createMenu(menuItem))
@@ -61,10 +71,10 @@ export class ContextMenuBuilder{
 
     private setSize = () => {
         const menuRect = this.menu.getBoundingClientRect()
-        this.size.innerHeight = menuRect.height;
-        this.size.innerWidth = menuRect.width;
-        this.size.outerHeight = menuRect.height
-        this.size.outerWidth = menuRect.width;
+        this.size.innerHeight = menuRect.height + extra;
+        this.size.innerWidth = menuRect.width + extra;
+        this.size.outerHeight = this.size.innerHeight
+        this.size.outerWidth = this.size.innerWidth
 
         const keys = Object.keys(this.submenuSize);
 
@@ -80,7 +90,7 @@ export class ContextMenuBuilder{
         const widestSubmenu = this.menu.querySelector(`#${widestChild}`)?.querySelector(".submenu")
         if(widestSubmenu){
             const submenuRect = widestSubmenu.getBoundingClientRect();
-            this.size.outerWidth = this.size.innerWidth + submenuRect.width + extra;
+            this.size.outerWidth = this.size.innerWidth + submenuRect.width;
         }
     }
 
@@ -109,11 +119,7 @@ export class ContextMenuBuilder{
         const menu = document.createElement("div");
         menu.id = this.createId()
         menu.classList.add("menu-item")
-        menu.setAttribute("name", menuItem.name)
-        menu.setAttribute("data-type", menuItem.type ?? "text")
-        menu.setAttribute("data-value", menuItem.value ?? "")
-        menu.textContent = menuItem.label ?? ""
-        this.setupMenu(menu)
+        this.setupMenu(menu, menuItem)
 
         return menu
     }
@@ -151,13 +157,16 @@ export class ContextMenuBuilder{
             if(item.type === "separator"){
                 height += separatorHeight;
             }else{
-                height += menuItemHeight + extra
+                height += menuItemHeight
             }
 
             if(item.label){
-                width = width > item.label.length ? item.label.length : width;
+                width = width > item.label.length ? width : item.label.length;
             }
         })
+
+        height += extra
+        width += extra
 
         const bottom = this.size.innerHeight + height;
         return { bottom, width, height}
@@ -189,21 +198,32 @@ export class ContextMenuBuilder{
         menu.id = this.createId()
         menu.classList.add("checkbox-menu", "menu-item")
         menu.tabIndex = 0
-        menu.setAttribute("name", menuItem.name)
-        menu.setAttribute("data-type", menuItem.type ?? "text")
-        menu.setAttribute("data-value", menuItem.value ?? "")
-        menu.textContent = menuItem.label ?? ""
 
         if(menuItem.checked){
             menu.setAttribute("checked", "")
         }
 
-        this.setupMenu(menu)
+        this.setupMenu(menu, menuItem)
 
         return menu;
     }
 
-    private setupMenu(menu:HTMLDivElement){
+    private setupMenu(menu:HTMLDivElement, menuItem:Mp.ContextMenu){
+
+        menu.setAttribute("name", menuItem.name)
+        menu.setAttribute("data-type", menuItem.type ?? "text")
+        menu.setAttribute("data-value", menuItem.value ?? "")
+        const menuName = document.createElement("div");
+        menuName.textContent = menuItem.label ?? ""
+        menuName.style.pointerEvents = "none"
+        const separator = document.createElement("div");
+        if(menuItem.accelerator){
+            separator.style.width = "40px";
+        }
+        const shortcut = document.createElement("div");
+        shortcut.textContent = menuItem.accelerator ?? ""
+        shortcut.style.pointerEvents = "none"
+        menu.append(menuName, separator, shortcut);
 
         menu.addEventListener("mousedown", e => {
             e.preventDefault()

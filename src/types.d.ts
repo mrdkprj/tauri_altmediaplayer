@@ -120,6 +120,12 @@ declare global {
 
         type MenuType = "text" | "radio" | "checkbox" | "separator"
 
+        type ContextMenuSize = {
+            innerHeight:number;
+            outerHeight:number;
+            innerWidth:number;
+            outerWidth:number;
+        };
         type ContextMenuBuildOption = {
             name:ContextMenuName;
             menus:Mp.ContextMenu[];

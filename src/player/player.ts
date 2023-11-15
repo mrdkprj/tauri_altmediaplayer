@@ -137,16 +137,14 @@ const onFooterMouseEnter = (_e:MouseEvent) => {
 
 const onKeydown = async (e:KeyboardEvent) => {
 
+    if(e.ctrlKey && e.altKey && e.key == "i"){
+        // open dev tool
+    }else{
+        e.preventDefault();
+    }
+
     if(e.ctrlKey && e.key === "r") e.preventDefault();
 
-    // if(e.ctrlKey){
-    //     if(e.key === "ArrowRight"){
-    //         return playFoward(2);
-    //     }
-    //     if(e.key === "ArrowLeft"){
-    //         return playBackward(2);
-    //     }
-    // }
     if(e.key === "F5") return await ipc.send("reload", {});
 
     if(e.key === "ArrowRight"){

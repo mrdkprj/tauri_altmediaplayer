@@ -1,14 +1,12 @@
-import Util, {EmptyFile} from "./util";
-import Config from "./config";
-import Helper from "./helper";
 import * as dialog from "@tauri-apps/api/dialog"
 import * as fs from "@tauri-apps/api/fs";
 import { relaunch } from '@tauri-apps/api/process';
 import { PhysicalPosition, PhysicalSize, WebviewWindow } from '@tauri-apps/api/window'
-import { removeFile } from '@tauri-apps/api/fs';
 import { writeText } from '@tauri-apps/api/clipboard';
-import {  save } from '@tauri-apps/api/dialog';
 import { Command } from '@tauri-apps/api/shell'
+import Util, {EmptyFile} from "./util";
+import Config from "./config";
+import Helper from "./helper";
 import { AudioExtentions, AudioFormats, VideoFormats } from "../constants";
 import * as path from "../path"
 import { IPCMain } from "../ipc";
@@ -433,7 +431,7 @@ const deleteFile = async (data:Mp.ReleaseFileRequest) => {
 
         if(!targetFilePaths.length) return;
 
-        await Promise.all(targetFilePaths.map(async item => await removeFile(item)))
+        await Promise.all(targetFilePaths.map(async item => await fs.removeFile(item)))
 
         removeFromPlaylist(data.fileIds);
 
@@ -570,7 +568,7 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
     if(!Renderers.Player) return;
 
     const defaultPath = await path.join(config.data.path.captureDestDir, `${getCurrentFile().name}-${data.timestamp}.jpeg`)
-    const savePath = await save({
+    const savePath = await dialog.save({
         defaultPath,
         filters: [
             { name: "Image", extensions: ["jpeg", "jpg"] },
@@ -771,6 +769,7 @@ const onToggleShuffle = () => {
 
 const onToggleFullscreen = async (e:Mp.FullscreenChange) => {
 
+    // change setDecorations to hide extra window bar
     if(e.fullscreen){
         await Renderers.Playlist?.hide();
         await Renderers.Convert?.hide();

@@ -24,9 +24,9 @@ export class IPC extends IPCBase {
 
     private changeTheme = (them:Mp.Theme) => {
         if(them === "Dark"){
-            document.documentElement.removeAttribute("Light")
+            document.documentElement.removeAttribute("light")
         }else{
-            document.documentElement.removeAttribute("Dark")
+            document.documentElement.removeAttribute("dark")
         }
         document.documentElement.setAttribute(them, "")
     }
