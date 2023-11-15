@@ -21,7 +21,6 @@ export class ContextMenu{
         outerWidth:0
     };
     private submenuSize:{[key:string]:Size} = {};
-    private complete = true;
     private handler:(e:Mp.MenuItemClickEvent) => void;
 
     constructor(name:ContextMenuName, options?:Mp.ContextMenu[]){
@@ -119,20 +118,48 @@ export class ContextMenu{
         const menu = document.createElement("div");
         menu.id = this.createId()
         menu.classList.add("menu-item")
-        this.setupMenu(menu, menuItem)
+        return this.setupMenu(menu, menuItem)
 
-        return menu
+        //return menu
+    }
+
+    private setupMenu(menu:HTMLDivElement, menuItem:Mp.ContextMenu){
+        const container = document.createElement("div");
+        container.classList.add("menu-item-container")
+        menu.setAttribute("name", menuItem.name)
+        menu.setAttribute("data-type", menuItem.type ?? "text")
+        menu.setAttribute("data-value", menuItem.value ?? "")
+        const menuName = document.createElement("div");
+        menuName.textContent = menuItem.label ?? ""
+        menuName.style.pointerEvents = "none"
+        const separator = document.createElement("div");
+        if(menuItem.accelerator){
+            separator.style.width = "40px";
+        }
+        const shortcut = document.createElement("div");
+        shortcut.textContent = menuItem.accelerator ?? ""
+        shortcut.style.pointerEvents = "none"
+        menu.append(menuName, separator, shortcut);
+
+        menu.addEventListener("mousedown", e => {
+            e.preventDefault()
+            e.stopImmediatePropagation();
+
+        })
+        menu.addEventListener("mouseup", this.onMenuItemClick)
+
+        container.append(menu);
+        return container;
     }
 
     private createSubmenu(submenuItem:Mp.ContextMenu, submenuMenuItems:Mp.ContextMenu[]){
 
         const container = document.createElement("div");
         container.id = this.createId();
-        container.classList.add("submenu-container", "menu-item")
-        container.addEventListener("mouseenter", this.onSubmenuMouseEnter)
+        container.classList.add("submenu-container")
 
         const header = document.createElement("div")
-        header.classList.add("submenu-header")
+        header.classList.add("menu-item")
         header.textContent = submenuItem.label ?? ""
         container.append(header)
 
@@ -172,27 +199,6 @@ export class ContextMenu{
         return { bottom, width, height}
     }
 
-    private onSubmenuMouseEnter = (e:MouseEvent) => {
-
-        const target = e.target as HTMLElement
-
-        if(!this.complete){
-            const bottom = e.clientY + this.submenuSize[target.id].height;
-            const overflow = bottom - document.documentElement.clientHeight;
-            const submenu = target.querySelector(".submenu") as HTMLElement;
-            if(overflow > 0){
-                submenu.style.top = `${-overflow}px`
-            }else{
-                submenu.style.top = "0px"
-            }
-
-            this.complete = true;
-        }
-
-        target.classList.add("submenu-hover");
-
-    }
-
     private createCheckboxMenu(menuItem:Mp.ContextMenu){
         const menu = document.createElement("div");
         menu.id = this.createId()
@@ -203,34 +209,9 @@ export class ContextMenu{
             menu.setAttribute("checked", "")
         }
 
-        this.setupMenu(menu, menuItem)
+        return this.setupMenu(menu, menuItem)
 
-        return menu;
-    }
-
-    private setupMenu(menu:HTMLDivElement, menuItem:Mp.ContextMenu){
-
-        menu.setAttribute("name", menuItem.name)
-        menu.setAttribute("data-type", menuItem.type ?? "text")
-        menu.setAttribute("data-value", menuItem.value ?? "")
-        const menuName = document.createElement("div");
-        menuName.textContent = menuItem.label ?? ""
-        menuName.style.pointerEvents = "none"
-        const separator = document.createElement("div");
-        if(menuItem.accelerator){
-            separator.style.width = "40px";
-        }
-        const shortcut = document.createElement("div");
-        shortcut.textContent = menuItem.accelerator ?? ""
-        shortcut.style.pointerEvents = "none"
-        menu.append(menuName, separator, shortcut);
-
-        menu.addEventListener("mousedown", e => {
-            e.preventDefault()
-            e.stopImmediatePropagation();
-
-        })
-        menu.addEventListener("mouseup", this.onMenuItemClick)
+        //return menu;
     }
 
     private createSeparator(){

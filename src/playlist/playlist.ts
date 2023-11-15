@@ -56,27 +56,25 @@ const onContextMenu = async (e:MouseEvent) => {
 
 const onKeydown = async (e:KeyboardEvent) => {
 
-    if(e.ctrlKey && e.altKey && e.key == "i"){
-        // open dev tool
-    }else{
-        e.preventDefault();
-    }
-
     if(RenameState.renaming) return;
 
     if(e.key === "Enter"){
+        e.preventDefault();
         return await ipc.send("toggle-play", {})
     }
 
     if(e.ctrlKey && e.key === "a"){
+        e.preventDefault();
         return selectAll();
     }
 
     if(e.ctrlKey && e.key === "z"){
+        e.preventDefault();
         return undoRename();
     }
 
     if(e.ctrlKey && e.key === "y"){
+        e.preventDefault();
         return redoRename();
     }
 

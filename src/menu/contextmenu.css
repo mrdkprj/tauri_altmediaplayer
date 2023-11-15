@@ -1,4 +1,5 @@
 .menu-container{
+    padding: 5px 0px;
     position: fixed;
     width: fit-content;
     background-color: var(--context-bgcolor);
@@ -14,7 +15,7 @@
 .menu-item{
     height: 25px;
     padding: 1px 25px 1px 25px;
-    margin: 5px 5px;
+    margin: 0px 5px;
     color: var(--context-color);
     cursor: default;
     border-radius: 4px;
@@ -25,13 +26,10 @@
     align-items: center;
 }
 
-.menu-item:hover{
-    background-color: var(--context-hover-color);
-}
-
 .menu-separator{
     width: 100%;
     border-top: 1px solid var(--context-border-color);
+    margin: 5px 0px;
 }
 
 .submenu{
@@ -47,6 +45,7 @@
     flex-direction: column;
     transition-delay: 0.5s;
     transition-property: visibility;
+    padding: 5px 0px;
 }
 
 .revert .submenu{
@@ -60,7 +59,7 @@
 .submenu-container::before{
     content: "";
     position: absolute;
-    right: 8px;
+    right: 12px;
     width: 6px;
     height: 6px;
     top: calc(50% - 4px);
@@ -79,7 +78,7 @@
     left: 0;
     width: 10px;
     height: 10px;
-    top: 6px;
+    top: 5px;
     border-right: 2px solid var(--context-color);
     transform: rotate(30deg);
 }
@@ -90,9 +89,14 @@
     left: 1px;
     width: 5px;
     height: 6px;
-    top: 17px;
+    top: 15px;
     border-left: 2px solid var(--context-color);
     transform: rotate(135deg);
+}
+
+.menu-item-container:hover .menu-item,
+.submenu-container:hover > .menu-item{
+    background-color: var(--context-hover-color);
 }
 
 .submenu-container:hover .submenu{

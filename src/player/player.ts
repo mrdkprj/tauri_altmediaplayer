@@ -3,9 +3,7 @@ import { FORWARD, BACKWARD, AudioExtentions, VideoExtentions } from "../constant
 import {extname} from "../path"
 import { handleShortcut } from "../shortcut";
 import { IPC } from "../ipc";
-console.log("mng start")
-const st =  new Date().getTime();
-console.log(new Date().getTime() - st)
+
 const ipc = new IPC("Player")
 const Dom = {
     title: new DomElement("title"),
@@ -63,6 +61,7 @@ const onClick = async (e:MouseEvent) => {
     }
 
     if(e.target.id == "close"){
+        Dom.video.element.src = ""
         await ipc.send("close", {mediaState})
     }
 
@@ -137,17 +136,17 @@ const onFooterMouseEnter = (_e:MouseEvent) => {
 
 const onKeydown = async (e:KeyboardEvent) => {
 
-    if(e.ctrlKey && e.altKey && e.key == "i"){
-        // open dev tool
-    }else{
-        e.preventDefault();
-    }
 
     if(e.ctrlKey && e.key === "r") e.preventDefault();
 
-    if(e.key === "F5") return await ipc.send("reload", {});
+    if(e.key === "F5"){
+        e.preventDefault();
+        return await ipc.send("reload", {});
+    }
 
     if(e.key === "ArrowRight"){
+
+        e.preventDefault();
 
         showControl();
 
@@ -162,6 +161,8 @@ const onKeydown = async (e:KeyboardEvent) => {
 
     if(e.key === "ArrowLeft"){
 
+        e.preventDefault();
+
         showControl();
 
         if(e.shiftKey){
@@ -174,26 +175,31 @@ const onKeydown = async (e:KeyboardEvent) => {
     }
 
     if(e.key === "ArrowUp"){
+        e.preventDefault();
         showControl();
         updateVolume(mediaState.videoVolume + 0.01)
         return
     }
 
     if(e.key === "ArrowDown"){
+        e.preventDefault();
         showControl();
         updateVolume(mediaState.videoVolume - 0.01)
         return
     }
 
     if(e.key === "Escape"){
+        e.preventDefault();
         return await exitFullscreen();
     }
 
     if(e.ctrlKey && e.key === "m"){
+        e.preventDefault();
         return toggleMute();
     }
 
     if(e.key === "Enter"){
+        e.preventDefault();
         return await togglePlay();
     }
 
@@ -670,8 +676,6 @@ const prepareSliders = () => {
     sliders.Time.slider.addEventListener("mousemove", showTimeTrackTooltip)
 }
 
-console.log("receive start")
-console.log(new Date().getTime() - st)
 ipc.receive("after-ready", prepare)
 ipc.receive("after-toggle-play", togglePlay)
 ipc.receive("after-change-display-mode", onChangeDisplayMode)
