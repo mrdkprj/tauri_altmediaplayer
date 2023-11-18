@@ -47,6 +47,7 @@ const onPlayerReady = async () => {
 
     Renderers.Player = WebviewWindow.getByLabel("Player")
     Renderers.Playlist = await helper.createPlaylist();
+    Renderers.Convert = await helper.createConvert();
     Renderers.ContextMenu = await helper.createContextMenu();
 
     await Renderers.ContextMenu?.hide();
@@ -501,15 +502,15 @@ const sortPlayList = () => {
 
 const displayMetadata = async () => {
 
-    // const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
-    // if(!file || !Renderers.Player) return;
+    const file = playlistFiles.find(file => file.id == playlistSelection.selectedId)
+    if(!file || !Renderers.Player) return;
 
-    // const metadata = await util.getMediaMetadata(file.fullPath)
-    // const metadataString = JSON.stringify(metadata, undefined, 2);
-    // const result = await dialog.showMessageBox(Renderers.Player, {type:"info", message:metadataString,  buttons:["Copy", "OK"], noLink:true})
-    // if(result.response === 0){
-    //     clipboard.writeText(metadataString);
-    // }
+    const metadata = await util.getMediaMetadata(file.fullPath)
+    const metadataString = JSON.stringify(metadata, undefined, 2);
+    const result = await dialog.ask(metadataString, {type:"info",  okLabel:"OK", cancelLabel:"Copy"})
+    if(!result){
+        await writeText(metadataString);
+    }
 }
 
 const togglePlaylistWindow = () => {
@@ -523,9 +524,9 @@ const togglePlaylistWindow = () => {
 
 }
 
-const openConvertDialog = () => {
+const openConvertDialog = async () => {
     const file = playlistFiles.find(file => file.id == playlistSelection.selectedId) ?? EmptyFile
-    ipc.send("Convert", "after-open-convert", {file})
+    await ipc.send("Convert", "after-open-convert", {file})
     Renderers.Convert?.show();
 }
 
@@ -579,80 +580,80 @@ const saveCapture = async (data:Mp.CaptureEvent) => {
 
     config.data.path.captureDestDir = path.dirname(savePath);
 
-    await fs.writeFile(savePath, atob(data.data));
-    //fs.writeFileSync(savePath, data.data, "base64")
-}
-
-const startConvert = async (_data:Mp.ConvertRequest) => {
-
-    // if(!Renderers.Convert) return endConvert();
-
-    // const file = await util.toFile(data.sourcePath);
-
-    // if(!util.exists(file.fullPath)) return endConvert();
-
-    // const extension = data.convertFormat.toLocaleLowerCase();
-    // const fileName =  file.name.replace(path.extname(file.name), "")
-
-    // const selectedPath = dialog.showSaveDialogSync(Renderers.Convert, {
-    //     defaultPath: path.join(config.data.path.convertDestDir, `${fileName}.${extension}`),
-    //     filters: [
-    //         {
-    //             name:data.convertFormat === "MP4" ? "Video" : "Audio",
-    //             extensions: [extension]
-    //         },
-    //     ],
-    // })
-
-    // if(!selectedPath) return endConvert()
-
-    // config.data.path.convertDestDir = path.dirname(selectedPath)
-
-    // const shouldReplace = getCurrentFile().fullPath === selectedPath
-
-    // const timestamp = String(new Date().getTime());
-    // const savePath = shouldReplace ? path.join(path.dirname(selectedPath), path.basename(selectedPath) + timestamp) : selectedPath
-
-    // Renderers.Convert.hide()
-
-    // ipc.send("Player", "toggle-convert", {})
-
-    // try{
-
-    //     if(data.convertFormat === "MP4"){
-    //         await util.convertVideo(data.sourcePath, savePath, data.options)
-    //     }else{
-    //         await util.convertAudio(data.sourcePath, savePath, data.options)
-    //     }
-
-    //     if(shouldReplace){
-    //         fs.renameSync(savePath, selectedPath)
-    //     }
-
-    //     endConvert();
-
-    // }catch(ex:any){
-
-    //     endConvert(ex.message)
-
-    // }finally{
-
-    //     openConvertDialog();
-    //     ipc.send("Player", "toggle-convert", {})
-
-    // }
+    await fs.writeBinaryFile(savePath, Uint8Array.from(atob(data.data), c => c.charCodeAt(0)));
 
 }
 
-// const endConvert = (message?:string) => {
+const startConvert = async (data:Mp.ConvertRequest) => {
 
-//     if(message){
-//         showErrorMessage(message)
-//     }
+    if(!Renderers.Convert) return await endConvert();
 
-//     ipc.send("Convert", "after-convert", {})
+    const file = await util.toFile(data.sourcePath);
 
-// }
+    if(!util.exists(file.fullPath)) return endConvert();
+
+    const extension = data.convertFormat.toLocaleLowerCase();
+    const fileName =  file.name.replace(path.extname(file.name), "")
+
+    const selectedPath = await dialog.save({
+        defaultPath: (await path.join(config.data.path.convertDestDir, `${fileName}.${extension}`)),
+        filters: [
+            {
+                name:data.convertFormat === "MP4" ? "Video" : "Audio",
+                extensions: [extension]
+            },
+        ],
+    })
+
+    if(!selectedPath) return endConvert()
+
+    config.data.path.convertDestDir = path.dirname(selectedPath)
+
+    const shouldReplace = getCurrentFile().fullPath === selectedPath
+
+    const timestamp = String(new Date().getTime());
+    const savePath = shouldReplace ? (await path.join(path.dirname(selectedPath), path.basename(selectedPath) + timestamp)) : selectedPath
+
+    await Renderers.Convert.hide()
+
+    await ipc.send("Player", "after-toggle-convert", {})
+
+    try{
+
+        if(data.convertFormat === "MP4"){
+            await util.convertVideo(data.sourcePath, savePath, data.options)
+        }else{
+            await util.convertAudio(data.sourcePath, savePath, data.options)
+        }
+
+        if(shouldReplace){
+            await ipc.invoke("rename", {filePath:savePath, newPath:selectedPath})
+        }
+
+        await endConvert();
+
+    }catch(ex:any){
+
+        await endConvert(ex.message)
+
+    }finally{
+
+        await openConvertDialog();
+        await ipc.send("Player", "after-toggle-convert", {})
+
+    }
+
+}
+
+const endConvert = async (message?:string) => {
+
+    if(message){
+        showErrorMessage(message)
+    }
+
+    await ipc.send("Convert", "after-convert", {})
+
+}
 
 const loadPlaylistFile = async () => {
 
@@ -747,8 +748,6 @@ const onLoadRequest = (data:Mp.LoadFileRequest) => {
 }
 
 const onReload = async () => {
-    // Renderers.Playlist?.reload();
-    // Renderers.Player?.reload();
     await relaunch();
 }
 
@@ -837,7 +836,7 @@ ipc.receive("toggle-shuffle", onToggleShuffle)
 ipc.receive("toggle-fullscreen", onToggleFullscreen)
 ipc.receive("close-convert", hideConvertDialog)
 ipc.receive("request-convert", startConvert)
-//ipc.receive("request-cancel-convert", util.cancelConvert)
+ipc.receive("request-cancel-convert", util.cancelConvert)
 ipc.receive("open-convert-sourcefile-dialog", openConvertSourceFileDialog)
 ipc.receive("shortcut", onShortcut)
 ipc.receive("open-context-menu", onOpenContextMenu)

@@ -2,8 +2,7 @@ import * as fs from "@tauri-apps/api/fs"
 import * as path from "../path";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {IPCBase} from "../ipc";
-// import ffmpeg from "fluent-ffmpeg"
-//import { Resolutions, Rotations } from "../constants";
+import { Resolutions, Rotations } from "../constants";
 
 const ipc = new IPCBase();
 
@@ -19,20 +18,7 @@ export const EmptyFile:Mp.MediaFile = {
 
 export default class Util{
 
-    //private convertDestFile:string | null;
-    //private command:ffmpeg.FfmpegCommand | null;
-    //private isDev:boolean;
-
-    constructor(){
-        //this.convertDestFile = null;
-        //this.command = null;
-        // this.isDev = process.env.NODE_ENV === "development";
-        // const resourcePath = this.isDev ? path.join(__dirname, "..", "..", "resources") : path.join(process.resourcesPath, "resources")
-        // const ffmpegPath = path.join(resourcePath, "ffmpeg.exe")
-        // const ffprobePath = path.join(resourcePath, "ffprobe.exe")
-        //ffmpeg.setFfmpegPath(ffmpegPath)
-        //ffmpeg.setFfprobePath(ffprobePath)
-    }
+    busy = false;
 
     extractFilesFromArgv(_target?:string[]){
 
@@ -60,7 +46,6 @@ export default class Util{
         return result;
 
     }
-
 
     async toFile(fullPath:string):Promise<Mp.MediaFile>{
 
@@ -107,12 +92,8 @@ export default class Util{
         return result;
     }
 
-    private extname(name:string){
-        return name.substring(name.lastIndexOf("."))
-    }
-
     private localCompareName(a:Mp.MediaFile, b:Mp.MediaFile){
-        return a.name.replace(this.extname(a.name),"").localeCompare(b.name.replace(this.extname(a.name),""))
+        return a.name.replace(path.extname(a.name),"").localeCompare(b.name.replace(path.extname(a.name),""))
     }
 
     sort(files:Mp.MediaFile[], sortOrder:Mp.SortOrder){
@@ -153,178 +134,119 @@ export default class Util{
 
     }
 
-    // getMediaMetadata(fullPath:string):Promise<Mp.FfprobeData>{
+    async getMediaMetadata(fullPath:string){
+        const result = await ipc.invoke("get_media_metadata", {fullPath})
+        const metadata = JSON.parse(result.metadata);
+        metadata.volume = this.extractVolumeInfo(result.volume)
+        return metadata;
+    }
 
-    //     return new Promise((resolve,reject)=>{
-    //         ffmpeg.ffprobe(fullPath, async (error:any, FfprobeData:ffmpeg.FfprobeData) => {
+    private extractVolumeInfo(std:string):Mp.MediaVolume{
+        const n_samples = std.match(/n_samples:\s?([0-9]*)\s?/)?.at(1) ?? ""
+        const mean_volume = std.match(/mean_volume:\s?([^ ]*)\s?dB/)?.at(1) ?? ""
+        const max_volume = std.match(/max_volume:\s?([^ ]*)\s?dB/)?.at(1) ?? ""
+        return {
+            n_samples,
+            mean_volume,
+            max_volume
+        }
+    }
 
-    //             if(error){
-    //                 reject(new Error("Read media metadata failed"))
-    //             }
+    async getMaxVolume(fullPath:string):Promise<string>{
+        const result = await ipc.invoke("get_media_metadata", {fullPath})
+        const volume = this.extractVolumeInfo(result.volume);
+        return volume.max_volume;
+    }
 
-    //             const metadata = FfprobeData as Mp.FfprobeData
-    //             metadata.volume = await this.getVolume(fullPath)
-    //             resolve(metadata);
-    //         })
-    //     })
-    // }
+    async cancelConvert(){
+        await ipc.invoke("cancel_convert", undefined);
+        this.busy = false;
+    }
 
-    // async getMaxVolume(sourcePath:string):Promise<string>{
-    //     const volume =await this.getVolume(sourcePath)
-    //     return volume.max_volume;
-    // }
+    async convertAudio(sourcePath:string, destPath:string, options:Mp.ConvertOptions){
 
-    // async getVolume(sourcePath:string):Promise<Mp.MediaVolume>{
-    //     return new Promise((resolve,reject)=>{
+        if(this.busy) throw new Error("Process busy")
 
-    //         this.command = ffmpeg({source:sourcePath})
+        this.busy = true;
 
-    //         this.command.outputOptions([
-    //             "-vn",
-    //             "-af",
-    //             "volumedetect",
-    //             "-f null",
-    //         ]).on("error", async (err:any) => {
-    //             reject(new Error(err.message))
-    //         })
-    //         .on("end", (_stdout, stderr) => {
-    //             this.finishConvert();
-    //             resolve(this.extractVolumeInfo(stderr))
-    //         })
-    //         .saveToFile('-');
+        const metadata = await this.getMediaMetadata(sourcePath);
 
-    //     })
-    // }
+        const bit_rate = metadata.streams[1].bit_rate;
 
-    // private extractVolumeInfo(std:string):Mp.MediaVolume{
-    //     const n_samples = std.match(/n_samples:\s?([0-9]*)\s?/)?.at(1) ?? ""
-    //     const mean_volume = std.match(/mean_volume:\s?([^ ]*)\s?dB/)?.at(1) ?? ""
-    //     const max_volume = std.match(/max_volume:\s?([^ ]*)\s?dB/)?.at(1) ?? ""
-    //     return {
-    //         n_samples,
-    //         mean_volume,
-    //         max_volume
-    //     }
-    // }
+        if(!bit_rate && options.audioBitrate === "BitrateNone"){
+            throw new Error("No audio bitrate detected")
+        }
 
-    // cancelConvert(){
-    //     if(this.command){
-    //         this.command.kill("SIGKILL");
-    //     }
-    // }
+        const audio_bitrate = options.audioBitrate !== "BitrateNone" ? `${options.audioBitrate}k` : `${Math.ceil(parseInt(bit_rate)/1000)}k`
+        let audio_volume = options.audioVolume !== "1" ? `${options.audioVolume}dB` : ""
 
-    // async convertAudio(sourcePath:string, destPath:string, options:Mp.ConvertOptions){
+        if(options.maxAudioVolume){
+            const maxVolumeText = await this.getMaxVolume(sourcePath);
+            const maxVolume = parseFloat(maxVolumeText);
+            if(maxVolume >= 0){
+                throw new Error("No max_volume")
+            }
+            audio_volume = `${maxVolume * -1}dB`
+        }
 
-    //     if(this.command) throw new Error("Process busy")
+        try{
+            await ipc.invoke("convert_audio", {sourcePath, destPath, audioOptions:{audio_bitrate, audio_volume }})
+        }catch(ex:any){
+            throw new Error(ex);
+        }finally{
+            this.busy = false;
+        }
 
-    //     this.convertDestFile = destPath;
+    }
 
-    //     const metadata = await this.getMediaMetadata(sourcePath);
+    async convertVideo(sourcePath:string, destPath:string, options:Mp.ConvertOptions){
 
-    //     const bit_rate = metadata.streams[1].bit_rate;
-    //     if(!bit_rate) throw new Error("No audio bitrate detected")
+        if(this.busy) throw new Error("Process busy")
 
-    //     const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(bit_rate)/1000)
-    //     const audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
+        this.busy = true;
 
-    //     return new Promise((resolve,reject)=>{
+        const metadata = await this.getMediaMetadata(sourcePath);
 
-    //         this.command = ffmpeg({source:sourcePath})
+        const size = Resolutions[options.frameSize] ? Resolutions[options.frameSize] : await this.getSize(metadata)
+        const rotation = Rotations[options.rotation] ? Rotations[options.rotation] : "";
 
-    //         this.command.format("mp3").audioCodec("libmp3lame").audioBitrate(audioBitrate)
+        const bit_rate = metadata.streams[1].bit_rate;
+        if(!bit_rate && options.audioBitrate === "BitrateNone"){
+            throw new Error("No audio bitrate detected")
+        }
 
-    //         if(audioVolume){
-    //             this.command.audioFilters(audioVolume)
-    //         }
+        const audio_bitrate = options.audioBitrate !== "BitrateNone" ? `${options.audioBitrate}k` : `${Math.ceil(parseInt(bit_rate)/1000)}k`
+        let audio_volume = options.audioVolume !== "1" ? `${options.audioVolume}dB` : ""
 
-    //         this.command.on("error", async (err:any) => {
-    //                 this.cleanUp();
-    //                 reject(new Error(err.message))
-    //             })
-    //             .on("end", () => {
-    //                 this.finishConvert();
-    //                 resolve(undefined)
-    //             })
-    //             .save(destPath);
+        if(options.maxAudioVolume){
+            const maxVolumeText = await this.getMaxVolume(sourcePath);
+            const maxVolume = parseFloat(maxVolumeText);
+            if(maxVolume >= 0){
+                throw new Error("No max_volume")
+            }
+            audio_volume = `${maxVolume * -1}dB`
+        }
 
-    //     })
+        try{
+            await ipc.invoke("convert_video", {sourcePath, destPath, videoOptions:{audio_bitrate, audio_volume, size, rotation}})
+        }catch(ex:any){
+            throw new Error(ex);
+        }finally{
+            this.busy = false;
+        }
 
-    // }
+    }
 
-    // async convertVideo(sourcePath:string, destPath:string, options:Mp.ConvertOptions){
+    private async getSize(metadata:any){
 
-    //     if(this.command) throw new Error("Process busy")
+        const rotation = metadata.streams[0].rotation
 
-    //     this.convertDestFile = destPath;
+        if(rotation === "-90" || rotation === "90"){
+            return `w=${metadata.streams[0].height}:h=${metadata.streams[0].width}`
+        }
 
-    //     const metadata = await this.getMediaMetadata(sourcePath);
+        return `w=${metadata.streams[0].width}:h=${metadata.streams[0].height}`
+    }
 
-    //     const size = Resolutions[options.frameSize] ? Resolutions[options.frameSize] : await this.getSize(metadata)
-    //     const rotation = Rotations[options.rotation] ? `transpose=${Rotations[options.rotation]}` : "";
 
-    //     const bit_rate = metadata.streams[1].bit_rate;
-    //     if(!bit_rate) throw new Error("No audio bitrate detected")
-
-    //     const audioBitrate = options.audioBitrate !== "BitrateNone" ? options.audioBitrate : Math.ceil(parseInt(bit_rate)/1000)
-    //     let audioVolume = options.audioVolume !== "1" ? `volume=${options.audioVolume}` : ""
-
-    //     if(options.maxAudioVolume){
-    //         const maxVolumeText = await this.getMaxVolume(sourcePath);
-    //         const maxVolume = parseFloat(maxVolumeText);
-    //         if(maxVolume >= 0){
-    //             throw new Error("No max_volume")
-    //         }
-    //         audioVolume = `volume=${maxVolume * -1}dB`
-    //     }
-
-    //     return new Promise((resolve,reject)=>{
-
-    //         this.command = ffmpeg({source:sourcePath})
-
-    //         this.command.format("mp4").videoCodec("libx264").size(size)
-    //         if(rotation){
-    //             this.command.withVideoFilter(rotation)
-    //         }
-    //         this.command.audioCodec("libmp3lame").audioBitrate(audioBitrate)
-    //         if(audioVolume){
-    //             this.command.audioFilters(audioVolume)
-    //         }
-    //         this.command.on("error", async (err:any) => {
-    //                 this.cleanUp();
-    //                 reject(new Error(err.message))
-    //             })
-    //             .on("end", () => {
-    //                 this.finishConvert();
-    //                 resolve(undefined)
-    //             })
-    //             .save(destPath);
-
-    //     })
-    // }
-
-    // private async getSize(metadata:ffmpeg.FfprobeData){
-
-    //     const rotation = metadata.streams[0].rotation
-
-    //     if(rotation === "-90" || rotation === "90"){
-    //         return `${metadata.streams[0].height}x${metadata.streams[0].width}`
-    //     }
-
-    //     return `${metadata.streams[0].width}x${metadata.streams[0].height}`
-    // }
-
-    // private finishConvert(){
-    //     this.command = null;
-    //     this.convertDestFile = null;
-    // }
-
-    // private cleanUp(){
-
-    //     if(this.convertDestFile && this.exists(this.convertDestFile)){
-    //         fs.rmSync(this.convertDestFile);
-    //     }
-
-    //     this.finishConvert();
-
-    // }
 }

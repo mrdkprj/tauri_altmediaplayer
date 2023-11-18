@@ -1,6 +1,7 @@
 export const WindowLabel = {
     PlayerLabel: "Player",
     PlaylistLabel: "Playlist",
+    ConvertLabel:"Convert",
     PlayerContextMenuLabel: "ContextMenu",
     PlayListContextMenuLabel: "PlaylistMenu",
     SortContextMenuLabel: "SortMenu",
@@ -38,16 +39,16 @@ export const AudioExtentions = [
 
 export const Resolutions = {
     "SizeNone": "",
-    "360p":"480x360",
-    "480p":"640x480",
-    "720p":"1280x720",
-    "1080p":"1920x1080",
+    "360p":"w=480:h=360",
+    "480p":"w=640:h=480",
+    "720p":"w=1280:h=720",
+    "1080p":"w=1920:h=1080",
 }
 
 export const Rotations = {
-    "RotationNone": 0,
-    "90Clockwise": 1,
-    "90CounterClockwise":2
+    "RotationNone": "0",
+    "90Clockwise": "1",
+    "90CounterClockwise":"2"
 }
 
 export const FORWARD = 1;

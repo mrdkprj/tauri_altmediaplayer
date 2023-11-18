@@ -3,8 +3,48 @@
 
 use std::os::windows::prelude::*;
 use tauri::{Manager, WindowBuilder, utils::config::WindowConfig, App, Window};
+
 mod clickthru;
+pub mod util;
+
 use clickthru::{clear_forward, forward_mouse_messages};
+use util::ffmpeg;
+
+#[tauri::command]
+fn cancel_convert(){
+    ffmpeg::cancel();
+}
+
+#[tauri::command]
+async fn get_media_metadata(full_path:String) -> Result<ffmpeg::MediaMetadata, ()> {
+    let result = ffmpeg::get_media_metadata(full_path).await;
+    Ok(result)
+}
+
+#[tauri::command]
+async fn convert_audio(source_path:String, dest_path:String, audio_options:ffmpeg::AudioOptions) -> Result<bool, String> {
+    let result = ffmpeg::convert_audio(source_path, dest_path, audio_options).await;
+
+    if result.is_ok() == true {
+        Ok(result.ok().unwrap())
+    }else{
+        Err(result.err().unwrap())
+    }
+
+}
+
+
+#[tauri::command]
+async fn convert_video(source_path:String, dest_path:String, video_options:ffmpeg::VideoOptions) -> Result<bool, String> {
+    let result = ffmpeg::convert_video(source_path, dest_path, video_options).await;
+
+    if result.is_ok() == true {
+        Ok(result.ok().unwrap())
+    }else{
+        Err(result.err().unwrap())
+    }
+
+}
 
 #[tauri::command]
 fn clickthru(app: tauri::AppHandle, ignore:bool, id:String){
@@ -93,8 +133,20 @@ fn create_child_window(app:&App, id: &str, url: &str, parent: &Window) -> Window
 
 }
 
+#[derive(Clone, serde::Serialize)]
+struct Payload {
+  args: Vec<String>,
+  cwd: String,
+}
+
+
 fn main(){
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            println!("{}, {argv:?}, {cwd}", app.package_info().name);
+
+            app.emit_all("single-instance", Payload { args: argv, cwd }).unwrap();
+        }))
         .setup(|app| {
 
             let player = app.get_window("Player").unwrap();
@@ -111,7 +163,17 @@ fn main(){
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![clickthru, create_modal, create_child, rename, stat])
+        .invoke_handler(tauri::generate_handler![
+            clickthru,
+            create_modal,
+            create_child,
+            rename,
+            stat,
+            get_media_metadata,
+            convert_audio,
+            convert_video,
+            cancel_convert
+        ])
         .run(tauri::generate_context!())
         .expect("error while running application");
 }

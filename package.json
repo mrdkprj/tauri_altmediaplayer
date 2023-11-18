@@ -1,5 +1,5 @@
 {
-  "name": "mediaplayer",
+  "name": "altmediaplayer",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,8 +12,7 @@
     "build": "tauri build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1.5.0",
-    "tauri-plugin-fs-extra-api": "https://github.com/tauri-apps/tauri-plugin-fs-extra#v1"
+    "@tauri-apps/api": "^1.5.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.5.0",

@@ -19,6 +19,7 @@ export class IPC extends IPCBase {
     }
 
     async init(){
+        await listen("single-instance", (a:any) => console.log(a))
         await this.receive("after-change-theme", () => {})
     }
 

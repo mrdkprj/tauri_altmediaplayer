@@ -24,6 +24,27 @@ export default class Helper{
 
     }
 
+    async createConvert(){
+        const options = {
+            url: 'src/convert/convert.html',
+            width:640,
+            height:700,
+            visible:false,
+            resizable:true,
+            skipTaskbar:true,
+            minimizable:false,
+            maximizable:false,
+            fullscreen:false,
+            decorations:false,
+            closable:true,
+            focus:true,
+            transparent:false,
+            title:""
+        }
+
+        return WebviewWindow.getByLabel(WindowLabel.ConvertLabel) ?? await createChildWindow(WindowLabel.ConvertLabel as RendererName, {parentLabel:WindowLabel.PlayerLabel, parentType:"Owner"}, options)
+    }
+
     async createContextMenu(){
 
         const options = {

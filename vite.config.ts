@@ -21,6 +21,7 @@ export default defineConfig(async () => ({
             input: {
                 player: resolve(__dirname, 'src/player/player.html'),
                 playlist: resolve(__dirname, 'src/playlist/playlist.html'),
+                convert: resolve(__dirname, 'src/convert/convert.html'),
                 menu: resolve(__dirname, 'src/menu/menu.html'),
             },
         }

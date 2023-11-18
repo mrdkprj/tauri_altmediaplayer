@@ -23,9 +23,13 @@ declare global {
     }
 
     type TauriCommandMap = {
-        "rename":TauriCommand<Mp.TauriRenamePayload, null>;
-        "clickthru":TauriCommand<Mp.TauriClickthruPayload, null>;
+        "rename":TauriCommand<Mp.TauriRenamePayload, undefined>;
+        "clickthru":TauriCommand<Mp.TauriClickthruPayload, undefined>;
         "stat": TauriCommand<Mp.TauriStatPayload, Mp.TauriStatResponse>;
+        "get_media_metadata": TauriCommand<Mp.TauriMetadataPayload, Mp.TauriMetadataResponse>;
+        "cancel_convert": TauriCommand<undefined, nuundefinedll>;
+        "convert_audio": TauriCommand<Mp.TauriConvertAudioPayload, undefined>;
+        "convert_video": TauriCommand<Mp.TauriConvertVideoPayload, undefined>;
     }
 
     type MainChannelEventMap = {
@@ -126,6 +130,7 @@ declare global {
             innerWidth:number;
             outerWidth:number;
         };
+
         type ContextMenuBuildOption = {
             name:ContextMenuName;
             menus:Mp.ContextMenu[];
@@ -411,6 +416,35 @@ declare global {
             atime:number,
             mtime:number,
             ctime:number,
+        }
+
+        type TauriMetadataPayload = {
+            fullPath:string;
+        }
+
+        type TauriMetadataResponse = {
+            metadata:string;
+            volume:string;
+        }
+
+        type TauriConvertAudioPayload = {
+            sourcePath:string;
+            destPath:string;
+            audioOptions:{
+                audio_bitrate:string;
+                audio_volume:string;
+            }
+        }
+
+        type TauriConvertVideoPayload = {
+            sourcePath:string;
+            destPath:string;
+            videoOptions:{
+                audio_bitrate:string;
+                audio_volume:string;
+                size:string;
+                rotation:string;
+            }
         }
 
         type RenameRequest = {

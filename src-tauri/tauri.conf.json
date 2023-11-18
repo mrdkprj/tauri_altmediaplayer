@@ -15,11 +15,22 @@
       "all": false,
       "shell": {
         "execute": true,
+        "sidecar":true,
         "scope": [
           {
             "name": "run-explorer",
             "cmd": "explorer",
             "args": ["/e,/select,", { "validator": "\\S+" }]
+          },
+          {
+            "name": "binaries/ffmpeg",
+            "args": [{ "validator": "\\S+" }],
+            "sidecar": true
+          },
+          {
+            "name": "binaries/ffprobe",
+            "args": [{ "validator": "\\S+" }],
+            "sidecar": true
           }
         ]
       },
@@ -34,15 +45,17 @@
         "scope": ["**"]
       },
       "clipboard": {
-        "all": true
+        "writeText":true
       },
       "protocol": {
-        "all":false,
         "asset": true,
         "assetScope": ["**"]
       },
       "dialog":{
         "all":true
+      },
+      "process":{
+        "relaunch":true
       }
     },
     "bundle": {
@@ -59,7 +72,11 @@
           "installMode":"currentUser",
           "installerIcon": "icons/icon.ico"
         }
-      }
+      },
+      "externalBin": [
+        "binaries/ffmpeg",
+        "binaries/ffprobe"
+      ]
     },
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost"
