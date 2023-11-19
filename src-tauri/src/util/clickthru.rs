@@ -31,7 +31,7 @@ pub fn forward_mouse_messages(window:&Window, forward:bool){
   let mut forwarding_windows = FORWARDING_WINDOWS.lock().unwrap();
   let mut mouse_hook = MOUSE_HOOK.lock().unwrap();
 
-  if forward == true {
+  if forward {
 
     *fowarding_mouse_messages = true;
     forwarding_windows.push(window.clone());
@@ -67,7 +67,7 @@ pub fn forward_mouse_messages(window:&Window, forward:bool){
       }
     }
 
-    if *fowarding_mouse_messages == true && forwarding_windows.is_empty() == true {
+    if *fowarding_mouse_messages && forwarding_windows.is_empty() {
       *fowarding_mouse_messages = false;
       unsafe{
         if *mouse_hook != None {
@@ -95,7 +95,7 @@ unsafe extern "system" fn sub_class_proc(hwnd: HWND, umsg: u32, wparam: WPARAM, 
     // the messages. As to why this is caught for the legacy window and not
     // the actual browser window is simply that the legacy window somehow
     // makes use of these events; posting to the main window didn't work.
-    if *FOWARDING_MOUSE_MESSAGES.lock().unwrap() == true {
+    if *FOWARDING_MOUSE_MESSAGES.lock().unwrap() {
         return windows::Win32::Foundation::LRESULT(0);
     }
 
@@ -147,7 +147,7 @@ unsafe extern "system" fn mouse_hook_proc(n_code:i32,wparam: WPARAM, lparam: LPA
   return CallNextHookEx(None, n_code, wparam, lparam);
 }
 
-pub fn _make_lparam(x: i16, y: i16) -> LPARAM {
+fn _make_lparam(x: i16, y: i16) -> LPARAM {
   LPARAM(((x as u16 as u32) | ((y as u16 as u32) << 16)) as usize as _)
 }
 

@@ -2,13 +2,38 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::os::windows::prelude::*;
+use std::{env, sync::Mutex};
 use tauri::{Manager, WindowBuilder, utils::config::WindowConfig, App, Window};
 
-mod clickthru;
 pub mod util;
-
-use clickthru::{clear_forward, forward_mouse_messages};
 use util::ffmpeg;
+use util::clickthru;
+
+const PLAYER:&str = "Player";
+const PLAYLIST:&str = "Playlist";
+const CONVERT:&str = "Convert";
+
+#[derive(serde::Serialize)]
+struct OpenedUrls(Mutex<Vec<String>>);
+
+#[derive(Clone, serde::Serialize)]
+struct SecondInstanceArgs {
+  args: Vec<String>,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct Metadata {
+    size:u64,
+    atime:u64,
+    mtime:u64,
+    ctime:u64,
+}
+
+#[tauri::command]
+fn init(app_handle: tauri::AppHandle) -> Vec<String> {
+    let urls = app_handle.state::<OpenedUrls>().0.lock().unwrap().clone();
+    return urls;
+}
 
 #[tauri::command]
 fn cancel_convert(){
@@ -25,32 +50,29 @@ async fn get_media_metadata(full_path:String) -> Result<ffmpeg::MediaMetadata, (
 async fn convert_audio(source_path:String, dest_path:String, audio_options:ffmpeg::AudioOptions) -> Result<bool, String> {
     let result = ffmpeg::convert_audio(source_path, dest_path, audio_options).await;
 
-    if result.is_ok() == true {
+    if result.is_ok() {
         Ok(result.ok().unwrap())
     }else{
         Err(result.err().unwrap())
     }
-
 }
-
 
 #[tauri::command]
 async fn convert_video(source_path:String, dest_path:String, video_options:ffmpeg::VideoOptions) -> Result<bool, String> {
     let result = ffmpeg::convert_video(source_path, dest_path, video_options).await;
 
-    if result.is_ok() == true {
+    if result.is_ok() {
         Ok(result.ok().unwrap())
     }else{
         Err(result.err().unwrap())
     }
-
 }
 
 #[tauri::command]
 fn clickthru(app: tauri::AppHandle, ignore:bool, id:String){
     //println!("win:{}, ignore:{}",id, ignore);
     let window: tauri::Window = app.get_window(&id).unwrap();
-    forward_mouse_messages(&window, ignore);
+    clickthru::forward_mouse_messages(&window, ignore);
     window.set_ignore_cursor_events(ignore).unwrap();
 }
 
@@ -88,14 +110,6 @@ async fn rename(file_path: std::path::PathBuf, new_path: std::path::PathBuf){
 	std::fs::rename(file_path, new_path).unwrap();
 }
 
-#[derive(Clone, serde::Serialize)]
-struct Metadata {
-    size:u64,
-    atime:u64,
-    mtime:u64,
-    ctime:u64,
-}
-
 #[tauri::command]
 async fn stat(full_path: std::path::PathBuf) -> Metadata {
     let metadata = std::fs::metadata(full_path).unwrap();
@@ -108,23 +122,26 @@ async fn stat(full_path: std::path::PathBuf) -> Metadata {
     }
 }
 
+#[tauri::command]
+fn close(app_handle: tauri::AppHandle){
+    clickthru::clear_forward();
+    app_handle.exit(0);
+}
+
 fn create_child_window(app:&App, id: &str, url: &str, parent: &Window) -> Window {
 
-    let visible = if id == "Playlist" {false} else {true};
-    let closable = if id == "Playlist" {true} else {false};
-    let transparent = if id == "Playlist" {false} else {true};
     let child = WindowBuilder::new(app, id, tauri::WindowUrl::App(url.into()))
         .title("")
         .fullscreen(false)
         .resizable(false)
         .maximizable(false)
         .minimizable(false)
-        .closable(closable)
+        .closable(true)
         .focused(false)
-        .visible(visible)
+        .visible(false)
         .decorations(false)
         .skip_taskbar(true)
-        .transparent(transparent)
+        .transparent(false)
         .theme(Some(tauri::Theme::Dark));
 
     let child = child.owner_window(parent.hwnd().unwrap());
@@ -133,37 +150,30 @@ fn create_child_window(app:&App, id: &str, url: &str, parent: &Window) -> Window
 
 }
 
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-  args: Vec<String>,
-  cwd: String,
-}
-
-
 fn main(){
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
-            println!("{}, {argv:?}, {cwd}", app.package_info().name);
-
-            app.emit_all("single-instance", Payload { args: argv, cwd }).unwrap();
+        .manage(OpenedUrls(Default::default()))
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            app.emit_to(PLAYER, "second-instance", SecondInstanceArgs { args: argv }).unwrap();
         }))
         .setup(|app| {
 
-            let player = app.get_window("Player").unwrap();
-            create_child_window(app, "Playlist", "src/playlist/playlist.html", &player);
+            let player = app.get_window(PLAYER).unwrap();
+            create_child_window(app, PLAYLIST, "src/playlist/playlist.html", &player);
+            create_child_window(app, CONVERT, "src/convert/convert.html", &player);
+
+            let mut urls = Vec::new();
+            for arg in env::args().skip(1) {
+                urls.push(arg);
+            }
+
+            *app.state::<OpenedUrls>().0.lock().unwrap() = urls;
 
             Ok(())
         })
-        .on_window_event(|event| match event.event() {
-            tauri::WindowEvent::Destroyed => {
-
-              if event.window().label() == "player" {
-                clear_forward();
-              }
-            }
-            _ => {}
-        })
         .invoke_handler(tauri::generate_handler![
+            init,
+            close,
             clickthru,
             create_modal,
             create_child,
@@ -175,6 +185,6 @@ fn main(){
             cancel_convert
         ])
         .run(tauri::generate_context!())
-        .expect("error while running application");
+        .expect("error while running tauri application")
 }
 

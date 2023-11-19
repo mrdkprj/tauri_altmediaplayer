@@ -708,7 +708,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     prepareSliders();
 
     await ipc.init();
-    await ipc.send("player-ready", {})
+    await ipc.send("ready", {})
 });
 
 window.addEventListener("keydown", onKeydown)

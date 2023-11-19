@@ -101,7 +101,7 @@ pub async fn convert_audio(source_path:String, dest_path:String, options:AudioOp
     args.push("-b:a");
     args.push(&options.audio_bitrate);
 
-    let volume = if options.audio_volume.is_empty() == false { format!("volume={}", options.audio_volume) } else {String::new()};
+    let volume = if options.audio_volume.is_empty() { String::new() } else { format!("volume={}", options.audio_volume) };
 
     if volume.is_empty() == false {
         args.push("-filter:a");
@@ -123,7 +123,7 @@ pub async fn convert_audio(source_path:String, dest_path:String, options:AudioOp
         }
     }
 
-    if errors.is_empty() == true {
+    if errors.is_empty() {
         finish_convert();
         Ok(true)
     } else {
@@ -147,9 +147,9 @@ pub async fn convert_video(source_path:String, dest_path:String, options:VideoOp
     args.push("-b:a");
     args.push(&options.audio_bitrate);
 
-    let volume = if options.audio_volume.is_empty() == false { format!("volume={}", options.audio_volume) } else {String::new()};
+    let volume = if options.audio_volume.is_empty() { String::new() } else { format!("volume={}", options.audio_volume) };
 
-    if volume.is_empty() == false {
+    if !volume.is_empty() {
         args.push("-filter:a");
         args.push(&volume);
     }
@@ -157,8 +157,8 @@ pub async fn convert_video(source_path:String, dest_path:String, options:VideoOp
     args.push("-vcodec");
     args.push("libx264");
 
-    let video_filters = if options.size.is_empty() == false { format!("scale={}", options.size) } else {String::new()};
-    let video_filters = if options.rotation.is_empty() == false { format!("{},transpose={}", video_filters, options.rotation) } else {String::new()};
+    let video_filters = if options.size.is_empty() { String::new() } else { format!("scale={}", options.size) };
+    let video_filters = if options.rotation.is_empty() { String::new() } else { format!("{},transpose={}", video_filters, options.rotation) };
 
     if !video_filters.is_empty()  {
         args.push("-filter:v");
@@ -180,7 +180,7 @@ pub async fn convert_video(source_path:String, dest_path:String, options:VideoOp
         }
     }
 
-    if errors.is_empty() == true {
+    if errors.is_empty() {
         finish_convert();
         Ok(true)
     } else {
@@ -199,8 +199,7 @@ fn clean_up(){
 
     let mut current_file = CURRENT_FILE.lock().unwrap();
 
-    if current_file.is_empty() == false && Path::new(current_file.as_str()).exists() == true {
-        println!("{:?}", 6);
+    if !current_file.is_empty() && Path::new(current_file.as_str()).exists() {
         std::fs::remove_file(current_file.as_str()).unwrap();
     }
 

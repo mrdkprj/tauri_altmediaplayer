@@ -43,7 +43,9 @@ const showErrorMessage = async (ex:any) => {
     }
 }
 
-const onPlayerReady = async () => {
+const onReady = async () => {
+
+    const args = await ipc.invoke("init", undefined);
 
     Renderers.Player = WebviewWindow.getByLabel("Player")
     Renderers.Playlist = await helper.createPlaylist();
@@ -84,8 +86,13 @@ const onPlayerReady = async () => {
 
     await togglePlay();
 
-    await initPlaylist(util.extractFilesFromArgv())
+    await initPlaylist(args)
 
+}
+
+const onSecondInstance = async (e:Mp.SecondInstanceEvent) => {
+    await addToPlaylist(e.args);
+    Renderers.Player?.setFocus();
 }
 
 const loadMediaFile = async (autoPlay:boolean) => {
@@ -277,7 +284,8 @@ const saveConfig = async (data:Mp.MediaState) => {
 
 const closeWindow = async (data:Mp.CloseRequest) => {
     await saveConfig(data.mediaState);
-    Renderers.Player?.close();
+    //Renderers.Player?.close();
+    await ipc.invoke("close", undefined);
 }
 
 const shuffleList = () => {
@@ -817,7 +825,8 @@ const onContextMenuItemClick = (e:Mp.ContextMenuClickEvent) => {
 
 //const changeProgressBar = (data:Mp.ProgressEvent) => Renderers.Player?.setProgressBar(data.progress);
 
-ipc.receive("player-ready", onPlayerReady)
+ipc.receive("ready", onReady)
+ipc.receiveTauri("second-instance", onSecondInstance);
 ipc.receive("minimize", onMinimize)
 ipc.receive("toggle-maximize", toggleMaximize)
 ipc.receive("close", closeWindow)

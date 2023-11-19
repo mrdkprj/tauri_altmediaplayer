@@ -23,6 +23,8 @@ declare global {
     }
 
     type TauriCommandMap = {
+        "init": TauriCommand<init, string[]>;
+        "close": TauriCommand<undefined, undefined>;
         "rename":TauriCommand<Mp.TauriRenamePayload, undefined>;
         "clickthru":TauriCommand<Mp.TauriClickthruPayload, undefined>;
         "stat": TauriCommand<Mp.TauriStatPayload, Mp.TauriStatResponse>;
@@ -33,8 +35,8 @@ declare global {
     }
 
     type MainChannelEventMap = {
-        "player-ready":Mp.Event;
-        "window-ready": Mp.WindowReadyEvent;
+        "ready":Mp.Event;
+        "second-instance": Mp.SecondInstanceEvent;
         "context-menu-ready": Mp.ContextMenuReadyEvent;
         "context-menu-item-click":Mp.ContextMenuClickEvent;
         "minimize": Mp.Event;
@@ -171,13 +173,8 @@ declare global {
             data:MenuItemClickEvent;
         }
 
-        type SecondInstanceState = {
-            timeout:NodeJS.Timeout | undefined;
-            requireInitPlaylist:boolean;
-        }
-
-        type WindowReadyEvent = {
-            renderer:RendererName;
+        type SecondInstanceEvent = {
+            args:string[];
         }
 
         type ReadyEvent = {

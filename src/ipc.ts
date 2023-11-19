@@ -78,8 +78,12 @@ export class IPCMain extends IPCBase {
         }
     }
 
-    async receive<K extends keyof MainChannelEventMap>(channel:K, handler: (data: MainChannelEventMap[K]) => void){
+    receive = async <K extends keyof MainChannelEventMap>(channel:K, handler: (data: MainChannelEventMap[K]) => void) => {
         return await listen<RendererEvent<K>>(channel, e => this.listener(e, handler));
+    }
+
+    receiveTauri = async <K extends keyof MainChannelEventMap>(channel:K, handler: (e: MainChannelEventMap[K]) => void) => {
+        return await listen<MainChannelEventMap[K]>(channel, e => handler(e.payload))
     }
 
     send = async <K extends keyof RendererChannelEventMap>(rendererName:RendererName, channel:K, data:RendererChannelEventMap[K]) => {
