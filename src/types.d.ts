@@ -46,7 +46,7 @@ declare global {
         "drop": Mp.DropRequest;
         "load-file": Mp.LoadFileRequest;
         "progress": Mp.ProgressEvent;
-        "open-context-menu":Mp.ContextMenuEvent;
+        "open-context-menu":Mp.ShowContextMenuEvent;
         "play-status-change": Mp.ChangePlayStatusRequest;
         "reload": Mp.Event;
         "save-capture": Mp.CaptureEvent;
@@ -90,7 +90,8 @@ declare global {
         "after-convert": Mp.Event;
         "after-picture-in-picture":Mp.Event;
         "build-menu": Mp.ContextMenuBuildRequest;
-        "popup-context-menu": Mp.ContextMenuEvent;
+        "popup-context-menu": Mp.ShowContextMenuEvent;
+        "context-menu-close": Mp.Event;
         "after-change-theme": Mp.ChangeThemeEvent;
     }
 
@@ -146,7 +147,8 @@ declare global {
             windowLabel:string;
         }
 
-        type ContextMenuEvent = {
+        type ShowContextMenuEvent = {
+            opener: RendererName,
             target:ContextMenuName;
             x:number;
             y:number;

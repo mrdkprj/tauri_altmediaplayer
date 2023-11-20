@@ -7,7 +7,7 @@ use tauri::{Manager, WindowBuilder, utils::config::WindowConfig, App, Window};
 
 pub mod util;
 use util::ffmpeg;
-use util::clickthru;
+use util::forward;
 
 const PLAYER:&str = "Player";
 const PLAYLIST:&str = "Playlist";
@@ -72,7 +72,7 @@ async fn convert_video(source_path:String, dest_path:String, video_options:ffmpe
 fn clickthru(app: tauri::AppHandle, ignore:bool, id:String){
     //println!("win:{}, ignore:{}",id, ignore);
     let window: tauri::Window = app.get_window(&id).unwrap();
-    clickthru::forward_mouse_messages(&window, ignore);
+    forward::forward_mouse_messages(&window, ignore);
     window.set_ignore_cursor_events(ignore).unwrap();
 }
 
@@ -124,7 +124,7 @@ async fn stat(full_path: std::path::PathBuf) -> Metadata {
 
 #[tauri::command]
 fn close(app_handle: tauri::AppHandle){
-    clickthru::clear_forward();
+    forward::clear_forward();
     app_handle.exit(0);
 }
 
@@ -154,7 +154,7 @@ fn main(){
     tauri::Builder::default()
         .manage(OpenedUrls(Default::default()))
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            app.emit_to(PLAYER, "second-instance", SecondInstanceArgs { args: argv }).unwrap();
+            app.emit_to(PLAYER, "second-instance", SecondInstanceArgs { args: argv[1..].to_vec() }).unwrap();
         }))
         .setup(|app| {
 

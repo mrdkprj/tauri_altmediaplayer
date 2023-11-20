@@ -50,7 +50,7 @@ const onContextMenu = async (e:MouseEvent) => {
 
     e.preventDefault()
 
-    await ipc.send("open-context-menu", {target:"PlaylistMenu", x:e.screenX, y:e.screenY})
+    await openContextMenu("PlaylistMenu", e);
 
 }
 
@@ -100,9 +100,31 @@ const onClick = async (e:MouseEvent) => {
     }
 
     if(e.target.id === "sort"){
-        await ipc.send("open-context-menu", {target:"SortMenu", x:e.screenX, y:e.screenY})
+        await openContextMenu("SortMenu", e);
     }
 
+}
+
+const openContextMenu = async (target:ContextMenuName, e:MouseEvent) => {
+    swapTitle(false);
+    await ipc.send("open-context-menu", {opener:"Playlist", target, x:e.screenX, y:e.screenY});
+}
+
+const swapTitle = (enableTitle:boolean) => {
+    document.querySelectorAll(".playlist-item").forEach(el => {
+        const item = el as HTMLElement;
+        const title = enableTitle ? item.getAttribute("data-title") ?? "" : item.title ?? "";
+        if(enableTitle){
+            item.title = title;
+        }else{
+            item.title = "";
+            item.setAttribute("data-title", title)
+        }
+    })
+}
+
+const onContextMenuClose = () => {
+    swapTitle(true);
 }
 
 const onMouseDown = (e:MouseEvent) => {
@@ -451,6 +473,7 @@ const onRename = (data:Mp.RenameResult) => {
 
     selectedElement.textContent = fileName
     selectedElement.title = fileName
+    selectedElement.setAttribute("data-title", fileName);
 
     hideRenameField();
 
@@ -559,6 +582,7 @@ const createListItem = (file:Mp.MediaFile) => {
 
     const item = document.createElement("div");
     item.title = file.name
+    item.setAttribute("data-title", file.name);
     item.id = file.id;
     item.textContent = file.name
     item.draggable = true;
@@ -659,6 +683,7 @@ ipc.receive("after-rename", onRename);
 ipc.receive("after-start-rename", startEditFileName)
 ipc.receive("after-restart", onReset)
 ipc.receive("after-clear-playlist", clearPlaylist)
+ipc.receive("context-menu-close", onContextMenuClose);
 ipc.receiveTauri<string[]>("tauri://file-drop", onFileDrop)
 
 window.addEventListener("DOMContentLoaded", async () => {

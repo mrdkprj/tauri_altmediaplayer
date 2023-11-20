@@ -16,6 +16,7 @@ const bound = {
 }
 
 let currentMenu:ContextMenu | null = null;
+let opener:RendererName;
 let ignore = false;
 
 window.addEventListener("contextmenu", e => e.preventDefault());
@@ -42,7 +43,7 @@ const getPosition = (menu:ContextMenu, mousePosition:Mp.Position) => {
     return position;
 }
 
-const show = async (e: Mp.ContextMenuEvent) => {
+const show = async (e: Mp.ShowContextMenuEvent) => {
 
     ignore = false;
 
@@ -53,6 +54,8 @@ const show = async (e: Mp.ContextMenuEvent) => {
     }
     currentMenu = menus[e.target];
     document.body.append(currentMenu.menu)
+
+    opener = e.opener;
 
     const position = getPosition(currentMenu, e);
 
@@ -85,6 +88,8 @@ const hide = async () => {
     }
 
     await appWindow.hide()
+
+    await ipc.sendTo(opener, "context-menu-close", {});
 }
 
 const onFowardedMouseMove = async (e:Event<Mp.Position>) => {

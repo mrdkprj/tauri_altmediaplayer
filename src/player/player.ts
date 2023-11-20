@@ -217,7 +217,7 @@ const onResize = () => {
 const onContextMenu = async (e:MouseEvent) => {
     e.preventDefault()
     if((e.target as HTMLElement).classList.contains("media")){
-        await ipc.send("open-context-menu", {target:"PlayerMenu", x:e.screenX, y:e.screenY});
+        await ipc.send("open-context-menu", {opener:"Player", target:"PlayerMenu", x:e.screenX, y:e.screenY});
     }
 }
 

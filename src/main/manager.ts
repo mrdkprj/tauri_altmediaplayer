@@ -803,7 +803,7 @@ const onShortcut = (e:Mp.ShortcutEvent) => {
     }
 }
 
-const onOpenContextMenu = async (e:Mp.ContextMenuEvent) => {
+const onOpenContextMenu = async (e:Mp.ShowContextMenuEvent) => {
 
     await ipc.send("ContextMenu", "popup-context-menu", e)
 

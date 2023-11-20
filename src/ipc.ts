@@ -59,14 +59,13 @@ export class IPC extends IPCBase {
         await listen<T>(event, e => this.tauriListener(e, handler))
     }
 
-    private sender = async <K extends keyof MainChannelEventMap>(channel: K, data: MainChannelEventMap[K]) => {
+    send = async <K extends keyof MainChannelEventMap>(channel: K, data: MainChannelEventMap[K]) => {
         await emit(channel, {data, source:this.label})
     }
 
-    send = async <K extends keyof MainChannelEventMap>(channel: K, data: MainChannelEventMap[K]) => {
-        await this.sender(channel, data)
+    sendTo = async <K extends keyof RendererChannelEventMap>(rendererName:RendererName, channel: K, data: RendererChannelEventMap[K]) => {
+        await emit(channel, {data, target:rendererName});
     }
-
 }
 
 export class IPCMain extends IPCBase {
